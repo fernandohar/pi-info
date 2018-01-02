@@ -1,148 +1,182 @@
-var he_key = "yourkey"
-var city = "苏州"
-
+var stn = "HK Observatory"
 $(function() {
     // clock
     let clock = setInterval(setTime, 1000);
     let data = setInterval(setData, 1000 * 60 * 10);
-    let aqi = setInterval(setAQI, 1000 * 60 * 10);
     let $time = $('#time');
     let $date = $('#date');
     let $cnDate = $('#cnDate');
 
     function setTime() {
-        moment.locale('zh-cn');
-        var cn_date = calendar.solar2lunar();
-        $time.html(moment().format('H:mm:ss'));
+        moment.locale('zh-hk');
+        //var cn_date = calendar.solar2lunar();
+        $time.html(moment().format('HH:mm:ss'));
         $date.html(moment().format('LL dddd'));
-        cnDateText = cn_date.IMonthCn + cn_date.IDayCn
-        // 判断是否节气
-        if (cn_date.isTerm) {
-            cnDateText = cnDateText + cn_date.Term;
-        }
-        $cnDate.html("农历 " + cnDateText)
     }
     jg = new JustGage({
         id: "jg1",
-        value: 72,
+        value: 0,
         min: 0,
-        max: 300,
+        max: 100,
         pointer: true,
         pointerOptions: {
             toplength: 8,
             bottomlength: -20,
             bottomwidth: 6,
-            color: '#8e8e93'
+            color: '#FFFFFF'
         },
-        gaugeWidthScale: 0.4,
+        gaugeWidthScale: 0.8,
         hideMinMax: true,
         valueFontColor: "white",
         valueMinFontSize: 24,
         customSectors: [{
-            color: "#00ff00",
+            color: "#00FF00",
+            lo: 40,
+            hi: 60
+            /* Comfortable */
+        }, {
+            color: "#FF0000",
             lo: 0,
-            hi: 50
+            hi: 40
         }, {
-            color: "#ffcc00",
-            lo: 50,
+            color: "#0000FF",
+            lo: 60,
             hi: 100
-        }, {
-            color: "#ff8a00",
-            lo: 100,
-            hi: 150
-        }, {
-            color: "#f70000",
-            lo: 150,
-            hi: 200
-        }, {
-            color: "#90024c",
-            lo: 200,
-            hi: 300
-        }],
+        }
+        ],
         counter: false
     });
 
     setData();
-    setAQI();
 });
 
 function setData() {
-    var url = "https://free-api.heweather.com/s6/weather?location=" + city + "&key=" + he_key;
-    $.getJSON(url, function(data) {
-        console.log(data);
-        // 天气动画
-        var result = data.HeWeather6[0];
+//   var url = "http://www.hko.gov.hk/wxinfo/json/one_json.xml"
+   var url = "http://www.hko.gov.hk/wxinfo/json/one_json_uc.xml"
+   $.getJSON(url, function(data){
+  	var temperature = data.hko.Temperature;
+	var humidity = data.hko.RH;
+        var animationCode = data.fcartoon.Icon1;
+	
+	//STATION NAME
+	$("#city").text(stn);
 
-        // city: "苏州",
-        $("#city").text(result.basic.city);
+	//HUMIDITY
+	jg.refresh(humidity);
 
-        // 天气动画
-        var code = result.now.cond_code;
-        var myDate = new Date();
-        var currentHour = myDate.getHours();
-        var daylight = true;
-        if (currentHour > 17 || currentHour < 6) {
-            daylight = false;
-        } else {
-            daylight = true;
-        }
-        var animation = "sunny"
-        if (code == 100) {
-            if (daylight) {
-                animation = "sunny";
-            } else {
-                animation = "starry";
-            }
-        } else if (code >= 101 && code <= 104) {
-            animation = "cloudy"
-        } else if (code >= 300 && code <= 313) {
-            if (code >= 310 && code <= 312) {
-                animation = "stormy"
-            } else {
-                animation = "rainy"
-            }
-        } else if (code >= 400 && code <= 407) {
-            animation = "snowy"
-        }
-        $("#weather_icon").attr("class", animation);
-
-        // 当前
-        var now = result.now;
-        $("#temperature-now").text(now.tmp);
+        //TEMPERATURE
+        $("#temperature-now").text(temperature);
         $("#temperature-now").append("<sup><small>°C</small> </sup>");
 
-        var icon_link_head = '<img src="./static/img/';
-        var icon_link_tail = '.png" height="70" width="70"</img>';
-        var forecast = result.daily_forecast;
-        for (var i = 0; i < 3; ++i) {
-            if (forecast[i].cond_txt_d != forecast[i].cond_txt_n) {
-                txt = forecast[i].cond_txt_d + "转" + forecast[i].cond_txt_n;
-                icon = icon_link_head + forecast[i].cond_code_d + icon_link_tail;
-                var icon_code_night = forecast[i].cond_code_n;
-                if (icon_code_night == 100 || icon_code_night == 103) {
-                    icon_code_night = icon_code_night + "_night";
-                }
-                icon += icon_link_head + icon_code_night + icon_link_tail;
-            } else {
-                txt = forecast[i].cond_txt_d;
-                icon = icon_link_head + forecast[i].cond_code_d + icon_link_tail;
-            }
-            $(".weather" + i).text(txt);
-            $(".temp" + i).text(forecast[i].tmp_min + "℃ / " + forecast[i].tmp_max + "℃");
-            //"wind": "东风3-4级", TODO 也可能是“东北风微风”，不应该加“级”
-            $(".wind" + i).text(forecast[i].wind_dir + forecast[i].wind_sc + "级");
-            $("#icon" + i).html(icon);
-        }
-    });
+	$("#temperatureHigh").text("H: " + data.hko.HomeMaxTemperature);
+        $("#temperatureHigh").append("<sup><small>°C</small> </sup>");
+	$("#temperatureLow").text("L: " + data.hko.HomeMinTemperature)
+        $("#temperatureLow").append("<sup><small>°C</small> </sup>");
+	
+	//WEATHER ANIMATION
+	var myDate = new Date();
+        var hour = myDate.getHours();
+	var daylight = (hour > 5) && (hour < 17); //6am - 5pm 
+	console.log(daylight);
+	var animation = "sunny"
 
-}
+//animationCode mapping from HKO	
+var wxDesc = {
+    "50": "Sunny",
+    "51": "Sunny Periods",
+    "52": "Sunny Intervals",
+    "53": "Sunny Periods with A Few Showers",
+    "54": "Sunny Intervals with Showers",
+    "60": "Cloudy",
+    "61": "Overcast",
+    "62": "Light Rain",
+    "63": "Rain",
+    "64": "Heavy Rain",
+    "65": "Thunderstorms",
+    "70": "Fine",
+    "71": "Fine",
+    "72": "Fine",
+    "73": "Fine",
+    "74": "Fine",
+    "75": "Fine",
+    "76": "Mainly Cloudy",
+    "77": "Mainly Cloudy",
+    "80": "Windy",
+    "81": "Dry",
+    "82": "Humid",
+    "83": "Fog",
+    "84": "Mist",
+    "85": "Haze",
+    "90": "Hot",
+    "91": "Warm",
+    "92": "Cool",
+    "93": "Cold"
+};
 
-function setAQI() {
-    var url = "https://free-api.heweather.com/s6/air/now?location=" + city + "&key=" + he_key;
-    $.getJSON(url, function(data) {
-        console.log(data);
-        var result = data.HeWeather6[0];
-        // AQI
-        jg.refresh(result.air_now_city.aqi);
-    });
+var wxDescChi = {
+    "50": "陽光充沛",
+    "51": "間有陽光",
+    "52": "短暫陽光",
+    "53": "間有陽光幾陣驟雨",
+    "54": "短暫陽光有驟雨",
+    "60": "多雲",
+    "61": "密雲",
+    "62": "微雨",
+    "63": "雨",
+    "64": "大雨",
+    "65": "雷暴",
+    "70": "天色良好",
+    "71": "天色良好",
+    "72": "天色良好",
+    "73": "天色良好",
+    "74": "天色良好",
+    "75": "天色良好",
+    "76": "大致多雲",
+    "77": "天色大致良好",
+    "80": "大風",
+    "81": "乾燥",
+    "82": "潮濕",
+    "83": "霧",
+    "84": "薄霧",
+    "85": "煙霞",
+    "90": "熱",
+    "91": "暖",
+    "92": "涼",
+    "93": "冷",
+};
+	var clearSkyIconCodes = [50, 70,71,72,73,74,75, 80,81,82,83,84,85,90,91,92,93];
+	var cloudySkyIconCodes = [51, 52, 60, 61, 76, 77];
+	var rainyDayIconCodes = [53, 54, 62, 63];
+	var thunderStormIconCodes = [64, 65];
+	
+        if (daylight){
+		$("#widget-container").attr("class", "widget-container day");
+	}else{
+		$("#widget-container").attr("class", "widget-container night");
+	}
+	if(clearSkyIconCodes.includes(animationCode)){
+		animation = (daylight)? "sunny" : "starry";
+		
+	}else if (cloudySkyIconCodes.includes(animationCode)){
+		animation = "cloudy";
+	}else if (rainyDayIconCodes.includes(animationCode)){
+		animation = "rainy";
+	}else if (thunderStormIconCodes.includes(animationCode)){
+		animation = "stormy";
+	}
+	animation = "starry";
+
+	$("#weather_icon").attr("class", animation);
+
+	$("#weatherDesc").text(wxDescChi[animationCode]);
+
+	//3 DAYS WEATHER FORECAST
+	var i = -1;
+	while(++i < 3){
+		var fnd = data.F9D.WeatherForecast[i];
+		//$("#forcast"+i).text(fnd.ForecastDate);
+		$("#weather"+i).text(fnd.ForecastWeather);
+        	$("#temp"+i).text(fnd.ForecastMintemp + " - " + fnd.ForecastMaxtemp);
+	}
+   });
 }
