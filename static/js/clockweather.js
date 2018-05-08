@@ -2,7 +2,7 @@ var stn = "HK Observatory"
 $(function() {
     // clock
     let clock = setInterval(setTime, 1000);
-    let data = setInterval(setData, 1000 * 60 * 10);
+    let data = setInterval(setData, 1000 * 60 * 10); //every 10 minutes
     let $time = $('#time');
     let $date = $('#date');
     let $cnDate = $('#cnDate');
@@ -77,8 +77,7 @@ function setData() {
 	var myDate = new Date();
         var hour = myDate.getHours();
 	var daylight = (hour > 5) && (hour < 17); //6am - 5pm 
-	console.log(daylight);
-	var animation = "sunny"
+        var animation = "rainbow"
 
 //animationCode mapping from HKO	
 var wxDesc = {
@@ -148,35 +147,52 @@ var wxDescChi = {
 	var cloudySkyIconCodes = [51, 52, 60, 61, 76, 77];
 	var rainyDayIconCodes = [53, 54, 62, 63];
 	var thunderStormIconCodes = [64, 65];
-	
+	animationCode = parseInt(animationCode);
         if (daylight){
 		$("#widget-container").attr("class", "widget-container day");
 	}else{
 		$("#widget-container").attr("class", "widget-container night");
 	}
 	if(clearSkyIconCodes.includes(animationCode)){
-		animation = (daylight)? "sunny" : "starry";
-		
+		if(daylight){
+			animation = "sunny";
+		}else{
+			animation = "starry";
+		}
 	}else if (cloudySkyIconCodes.includes(animationCode)){
-		animation = "cloudy";
+   		animation = "cloudy";
 	}else if (rainyDayIconCodes.includes(animationCode)){
 		animation = "rainy";
 	}else if (thunderStormIconCodes.includes(animationCode)){
 		animation = "stormy";
 	}
-	animation = "starry";
-
+console.log(animationCode);
 	$("#weather_icon").attr("class", animation);
 
 	$("#weatherDesc").text(wxDescChi[animationCode]);
 
 	//3 DAYS WEATHER FORECAST
+	var today = parseInt(data.FLW.BulletinDate);
+
 	var i = -1;
 	while(++i < 3){
 		var fnd = data.F9D.WeatherForecast[i];
-		//$("#forcast"+i).text(fnd.ForecastDate);
+		var forecastDate = parseInt(fnd.ForecastDate)
+
+		var ithDay = forecastDate - today;
+		if(ithDay == 0){
+		$("#forecast"+i).text("今天");
+			
+		}else if(ithDay == 1){
+		 $("#forecast"+i).text("明天");
+		}else if (ithDay == 2){
+		 $("#forecast"+i).text("後天");
+		}else{
+                 $("#forecast"+i).text(i + "天後");
+		}
 		$("#weather"+i).text(fnd.ForecastWeather);
         	$("#temp"+i).text(fnd.ForecastMintemp + " - " + fnd.ForecastMaxtemp);
+		$("#temp"+i).append("<sup><small>°C</small></sup>");
 	}
    });
 }

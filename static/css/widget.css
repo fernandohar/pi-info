@@ -1,7 +1,7 @@
 body {
-  background-color: #FFFFFF;
+  background-color: #222233;
   font-family: Roboto, Helvetica, Arial, sans-serif;
-  color: #fff;
+  color: #FFF;
 }
 
 p {
@@ -13,12 +13,12 @@ p {
 .container{
 	padding : 0;
 	margin: 0px;
-	width : 780px;
+	width : 770px;
 }
 
 .widget-container{
  width: 800px;
- height: 480px;
+ height: 475px;
  padding: 10px;
  display: inline-block;
 }
